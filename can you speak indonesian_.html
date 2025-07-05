@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arsip Surat - Aplikasi Modern</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<style>
+  /* Reset & base */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; background: var(--bg-color); color: var(--text-color);
+    font-family: 'Inter', sans-serif; font-size: 16px;
+    line-height: 1.5; min-height: 100vh; display: flex; flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  :root {
+    --primary-color: #6366f1;
+    --accent-color: #06b6d4;
+    --bg-color-light: #f9fafb;
+    --text-color-light: #1f2937;
+    --bg-color-dark: #1f2937;
+    --text-color-dark: #f9fafb;
+    --card-bg-light: #ffffffdd;
+    --card-bg-dark: #374151dd;
+    --shadow-color: rgba(0,0,0,0.1);
+  }
+  body[data-theme='light'] {
+    --bg-color: var(--bg-color-light);
+    --text-color: var(--text-color-light);
+    --card-bg: var(--card-bg-light);
+  }
+  body[data-theme='dark'] {
+    --bg-color: var(--bg-color-dark);
+    --text-color: var(--text-color-dark);
+    --card-bg: var(--card-bg-dark);
+  }
+
+  /* Scrollbar customization */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-color);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 8px;
+    border: 3px solid var(--bg-color);
+  }
+
+  /* Layout grid */
+  #app {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 64px 1fr auto;
+    grid-template-areas:
+      "header header"
+      "sidebar main"
+      "footer footer";
+    min-height: 0;
+  }
+
+  header {
+    grid-area: header;
+    height: 64px;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--shadow-color);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header .brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    user-select: none;
+  }
+
+  header .right-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  button, input, select, textarea {
+    font-family: inherit;
+    font-size: 1rem;
+    outline-offset: 2px;
+  }
+
+  button {
+    cursor: pointer;
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 12px;
+    transition: background-color 0.3s ease;
+    min-height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+  button:hover, button:focus-visible {
+    background: var(--accent-color);
+    outline: none;
+  }
+
+  button.material-icons {
+    font-size: 20px;
+    line-height: 1;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+  button.material-icons:hover, button.material-icons:focus-visible {
+    background: rgba(255 255 255 / 0.2);
+  }
+
+  /* Sidebar */
+  aside#sidebar {
+    grid-area: sidebar;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border-right: 1px solid var(--shadow-color);
+    padding: 16px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: sticky;
+    top: 64px;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  aside#sidebar nav {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  aside#sidebar nav button {
+    background: transparent;
+    color: var(--text-color);
+    text-align: left;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: none;
+    transition: background-color 0.3s ease;
+  }
+  aside#sidebar nav button:hover, aside#sidebar nav button:focus-visible {
+    background: var(--primary-color);
+    color: white;
+    outline: none;
+  }
+  aside#sidebar nav button .material-icons {
+    font-size: 24px;
+  }
+  aside#sidebar nav button.active {
+    background: var(--accent-color);
+    color: white;
+  }
+
+  /* Notification badge */
+  .badge {
+    background: #ef4444;
+    border-radius: 12px;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0 6px;
+    min-width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Main content */
+  main#main {
+    grid-area: main;
+    padding: 24px 32px;
+    overflow-y: auto;
+    min-height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Search bar */
+  .search-container {
+    margin-bottom: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .search-container input[type="search"] {
+    flex-grow: 1;
+    padding: 10px 16px;
+    border-radius: 16px;
+    border: 1px solid #cbd5e1;
+    background: var(--bg-color);
+    transition: border-color 0.3s ease;
+  }
+  .search-container input[type="search"]:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+
+  /* Table styles */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+  thead {
+    background: var(--primary-color);
+    color: white;
+  }
+  th, td {
+    padding: 12px 24px;
+    text-align: left;
+    border-bottom: 1px solid #d1d5db;
+  }
+  tr:hover {
+    background: var(--card-bg);
+  }
+
+  /* Highlight search text */
+  mark {
+    background: var(--accent-color);
+    color: #000;
+  }
+
+  /* Form modal */
+  #modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+  }
+  #modal.show {
+    display: flex;
+  }
+  #modal .modal-content {
+    background: var(--card-bg);
+    border-radius: 16px;
+    max-width: 480px;
+    width: 100%;
+    padding: 24px 32px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    position: relative;
+    animation: slideIn 0.3s ease forwards;
+  }
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  #modal h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+  #modal label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  #modal input, #modal select {
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: var(--bg-color);
+    transition: border-color 0.3s ease;
+  }
+  #modal input:focus, #modal select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+
+  /* Error text */
+  .error-text {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: -16px;
+    margin-bottom: 12px;
+  }
+
+  /* Modal buttons */
+  .modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+
+  /* Toast notifications */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 12px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideInRight 0.3s ease forwards;
+    min-width: 300px;
+  }
+  .toast-icon {
+    font-family: 'Material Icons';
+    font-size: 28px;
+  }
+  .toast-close-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    font-family: 'Material Icons';
+    font-size: 20px;
+    cursor: pointer;
+    color: inherit;
+  }
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Footer */
+  footer#footer {
+    grid-area: footer;
+    background: var(--card-bg);
+    border-top: 1px solid var(--shadow-color);
+    padding: 12px 24px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-color);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    #app {
+      grid-template-columns: 64px 1fr;
+    }
+    aside#sidebar {
+      padding: 12px 8px 24px;
+    }
+    aside#sidebar nav button > span {
+      display: none;
+    }
+  }
+  @media (max-width: 640px) {
+    #app {
+      grid-template-columns: 1fr;
+      grid-template-rows: 64px 1fr 56px;
+      grid-template-areas:
+        "header"
+        "main"
+        "footer";
+    }
+    aside#sidebar {
+      display: none;
+    }
+    main#main {
+      padding: 16px 20px;
+      min-height: calc(100vh - 120px);
+    }
+    footer#footer {
+      position: sticky;
+      bottom: 0;
+      height: 56px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 0;
+      padding: 0;
+    }
+    footer#footer button {
+      flex-grow: 1;
+      height: 56px;
+      border-radius: 0;
+      font-size: 24px;
+      padding: 0;
+      min-width: 0;
+      background: transparent;
+      color: var(--primary-color);
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+    footer#footer button:hover, footer#footer button:focus-visible {
+      background: var(--card-bg);
+      color: var(--accent-color);
+      outline: none;
+    }
+  }
+</style>
+</head>
+<body data-theme="light">
+<div id="app" role="application" aria-label="Aplikasi arsip surat modern">
+  <header role="banner">
+    <div class="brand" aria-label="Identitas merk aplikasi">Arsip Surat</div>
+    <div class="right-controls">
+      <button title="Ganti tema" aria-label="Ganti tema aplikasi" id="theme-toggle" type="button">
+        <span class="material-icons" aria-hidden="true">dark_mode</span>
+      </button>
+      <button title="Tambah surat baru" aria-label="Tambah surat baru" id="add-btn" type="button">
+        <span class="material-icons" aria-hidden="true">add</span> Baru
+      </button>
+    </div>
+  </header>
+  <aside id="sidebar" aria-label="Navigasi Konteks">
+    <nav role="navigation" aria-label="Menu utama">
+      <button class="active" data-view="list" type="button">
+        <span class="material-icons" aria-hidden="true">folder</span><span> Arsip Surat</span>
+      </button>
+      <button data-view="categories" type="button">
+        <span class="material-icons" aria-hidden="true">category</span><span> Kategori</span>
+      </button>
+      <button data-view="settings" type="button">
+        <span class="material-icons" aria-hidden="true">settings</span><span> Pengaturan</span>
+      </button>
+    </nav>
+  </aside>
+  <main id="main" tabindex="-1" role="main">
+    <!-- Dynamic content will be inserted here -->
+  </main>
+  <footer id="footer" role="contentinfo">
+    &copy; 2024 Arsip Surat - Semua hak cipta dilindungi
+  </footer>
+</div>
+
+<!-- Modal for add/edit surat -->
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-content">
+    <h2 id="modal-title">Tambah Surat</h2>
+    <form id="surat-form" novalidate>
+      <label for="nomorSurat">Nomor Surat</label>
+      <input type="text" id="nomorSurat" name="nomorSurat" autocomplete="off" required />
+      <div class="error-text" id="error-nomorSurat"></div>
+
+      <label for="tanggalSurat">Tanggal Surat</label>
+      <input type="date" id="tanggalSurat" name="tanggalSurat" required />
+      <div class="error-text" id="error-tanggalSurat"></div>
+
+      <label for="pengirimSurat">Pengirim</label>
+      <input type="text" id="pengirimSurat" name="pengirimSurat" autocomplete="off" required />
+      <div class="error-text" id="error-pengirimSurat"></div>
+
+      <label for="perihalSurat">Perihal</label>
+      <input type="text" id="perihalSurat" name="perihalSurat" autocomplete="off" required />
+      <div class="error-text" id="error-perihalSurat"></div>
+
+      <label for="kategoriSurat">Kategori</label>
+      <select id="kategoriSurat" name="kategoriSurat" required>
+        <option value="">Pilih kategori</option>
+        <option value="Penting">Penting</option>
+        <option value="Biasa">Biasa</option>
+        <option value="Rahasia">Rahasia</option>
+        <option value="Lainnya">Lainnya</option>
+      </select>
+      <div class="error-text" id="error-kategoriSurat"></div>
+
+      <div class="modal-buttons">
+        <button type="button" id="cancel-btn">Batal</button>
+        <button type="submit" id="save-btn">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast notifications container -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  // State and data store
+  const storageKey = 'arsipSuratData';
+  let suratData = [];
+  let filteredSurat = [];
+  let editingId = null;
+  let currentView = 'list';
+  let theme = localStorage.getItem('theme') || 'light';
+
+  // DOM elements
+  const main = document.getElementById('main');
+  const modal = document.getElementById('modal');
+  const form = document.getElementById('surat-form');
+  const addBtn = document.getElementById('add-btn');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  const toastContainer = document.getElementById('toast-container');
+  const sidebarButtons = document.querySelectorAll('aside#sidebar nav button');
+
+  // Initialize app
+  function init() {
+    setTheme(theme);
+
+    // Load data from localStorage
+    const savedData = localStorage.getItem(storageKey);
+    if (savedData) {
+      try {
+        suratData = JSON.parse(savedData);
+      } catch {
+        suratData = [];
+      }
+    }
+
+    // Initial render
+    renderView(currentView);
+
+    // Event listeners
+    addBtn.addEventListener('click', () => openModal());
+    cancelBtn.addEventListener('click', closeModal);
+    form.addEventListener('submit', handleFormSubmit);
+    themeToggleBtn.addEventListener('click', toggleTheme);
+    sidebarButtons.forEach(btn => btn.addEventListener('click', onSidebarClick));
+
+    // Keyboard shortcuts desktop
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        openModal();
+      } else if (e.key === 'Escape') {
+        if (modal.classList.contains('show')) closeModal();
+      }
+    });
+  }
+
+  // Theme functions
+  function setTheme(newTheme) {
+    theme = newTheme;
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    themeToggleBtn.querySelector('span.material-icons').textContent = theme === 'light' ? 'dark_mode' : 'light_mode';
+  }
+  function toggleTheme() {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  }
+
+  // Render views
+  function renderView(view) {
+    currentView = view;
+    sidebarButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-view') === view));
+
+    if (view === 'list') {
+      renderListView();
+    } else if (view === 'categories') {
+      renderCategoriesView();
+    } else if (view === 'settings') {
+      renderSettingsView();
+    }
+  }
+
+  // Render list of surat
+  function renderListView() {
+    // Clear main content
+    main.innerHTML = `
+      <div class="search-container" role="search">
+        <input type="search" id="search-surat" placeholder="Cari surat..." aria-label="Cari surat" autocomplete="off" />
+      </div>
+      <div style="overflow:auto;">
+      <table aria-describedby="suratListDesc" role="table" aria-label="Daftar arsip surat">
+        <caption id="suratListDesc" class="sr-only">Daftar arsip surat disimpan</caption>
+        <thead>
+          <tr><th>Nomor</th><th>Tanggal</th><th>Pengirim</th><th>Perihal</th><th>Kategori</th><th>Aksi</th></tr>
+        </thead>
+        <tbody id="surat-tbody"></tbody>
+      </table>
+      </div>
+    `;
+
+    // Show full surat data filtered for initial search is empty = all
+    filteredSurat = [...suratData];
+
+    const tbody = document.getElementById('surat-tbody');
+    const searchInput = document.getElementById('search-surat');
+
+    function renderRows() {
+      tbody.innerHTML = filteredSurat.map(surat => {
+        // Highlight matching text in search
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        function highlight(text) {
+          if (!searchTerm) return text;
+          const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+          return text.replace(regex, '<mark>$1</mark>');
+        }
+
+        // Convert date format to localized Indonesian readable format
+        const dateObj = new Date(surat.tanggalSurat);
+        const formattedDate = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+
+        return `
+          <tr>
+            <td>${highlight(surat.nomorSurat)}</td>
+            <td>${highlight(formattedDate)}</td>
+            <td>${highlight(surat.pengirimSurat)}</td>
+            <td>${highlight(surat.perihalSurat)}</td>
+            <td>${highlight(surat.kategoriSurat)}</td>
+            <td>
+              <button aria-label="Edit surat nomor ${surat.nomorSurat}" class="edit-btn" data-id="${surat.id}" title="Edit surat">
+                <span class="material-icons">edit</span>
+              </button>
+              <button aria-label="Hapus surat nomor ${surat.nomorSurat}" class="delete-btn" data-id="${surat.id}" title="Hapus surat">
+                <span class="material-icons">delete</span>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    renderRows();
+
+    // Event search filter
+    searchInput.addEventListener('input', () => {
+      const val = searchInput.value.trim().toLowerCase();
+      filteredSurat = suratData.filter(surat => {
+        return (
+          surat.nomorSurat.toLowerCase().includes(val)
+          || surat.pengirimSurat.toLowerCase().includes(val)
+          || surat.perihalSurat.toLowerCase().includes(val)
+          || surat.kategoriSurat.toLowerCase().includes(val)
+          || new Date(surat.tanggalSurat).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}).toLowerCase().includes(val)
+        );
+      });
+      renderRows();
+    });
+
+    // Event edit & delete buttons
+    tbody.querySelectorAll('.edit-btn').forEach(btn =>
+      btn.addEventListener('click', e => {
+        const id = e.currentTarget.getAttribute('data-id');
+        openModal(id);
+      })
+    );
+    tbody.querySelectorAll('.delete-btn').forEach(btn =>
+      btn.addEventListener('click', e => {
+        const id = e.currentTarget.getAttribute('data-id');
+        if (confirm('Yakin ingin menghapus surat ini?')) {
+          deleteSurat(id);
+        }
+      })
+    );
+  }
+
+  // Escape RegExp for search highlight
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Modal open / close
+  function openModal(id = null) {
+    editingId = id;
+    form.reset();
+    clearErrors();
+
+    if (id) {
+      modal.querySelector('h2').textContent = 'Edit Surat';
+      const surat = suratData.find(s => s.id === id);
+      if (surat) {
+        form.nomorSurat.value = surat.nomorSurat;
+        form.tanggalSurat.value = surat.tanggalSurat;
+        form.pengirimSurat.value = surat.pengirimSurat;
+        form.perihalSurat.value = surat.perihalSurat;
+        form.kategoriSurat.value = surat.kategoriSurat;
+      }
+    } else {
+      modal.querySelector('h2').textContent = 'Tambah Surat';
+    }
+
+    modal.classList.add('show');
+    form.nomorSurat.focus();
+  }
+
+  function closeModal() {
+    modal.classList.remove('show');
+    editingId = null;
+  }
+
+  // Form validation
+  function clearErrors() {
+    ['nomorSurat','tanggalSurat','pengirimSurat','perihalSurat','kategoriSurat'].forEach(field => {
+      document.getElementById('error-' + field).textContent = '';
+    });
+  }
+
+  function validateForm() {
+    clearErrors();
+    let valid = true;
+
+    if (!form.nomorSurat.value.trim()) {
+      document.getElementById('error-nomorSurat').textContent = 'Nomor surat wajib diisi';
+      valid = false;
+    }
+    if (!form.tanggalSurat.value) {
+      document.getElementById('error-tanggalSurat').textContent = 'Tanggal surat wajib diisi';
+      valid = false;
+    }
+    if (!form.pengirimSurat.value.trim()) {
+      document.getElementById('error-pengirimSurat').textContent = 'Pengirim wajib diisi';
+      valid = false;
+    }
+    if (!form.perihalSurat.value.trim()) {
+      document.getElementById('error-perihalSurat').textContent = 'Perihal wajib diisi';
+      valid = false;
+    }
+    if (!form.kategoriSurat.value) {
+      document.getElementById('error-kategoriSurat').textContent = 'Kategori wajib dipilih';
+      valid = false;
+    }
+
+    return valid;
+  }
+
+  // Handle form submit for create/update
+  function handleFormSubmit(event) {
+    event.preventDefault();
+
+    if (!validateForm()) {
+      showToast('Mohon lengkapi data dengan benar.', 'error');
+      return;
+    }
+
+    // Prepare new or updated surat
+    const newSurat = {
+      nomorSurat: form.nomorSurat.value.trim(),
+      tanggalSurat: form.tanggalSurat.value,
+      pengirimSurat: form.pengirimSurat.value.trim(),
+      perihalSurat: form.perihalSurat.value.trim(),
+      kategoriSurat: form.kategoriSurat.value,
+    };
+
+    if (editingId) {
+      // Update existing
+      const idx = suratData.findIndex(s => s.id === editingId);
+      if (idx !== -1) {
+        suratData[idx] = {...suratData[idx], ...newSurat};
+        showToast(`Surat Nomor ${newSurat.nomorSurat} berhasil diperbarui.`, 'success');
+      }
+    } else {
+      // Create new, generate ID
+      newSurat.id = 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+      suratData.unshift(newSurat);
+      showToast(`Surat Nomor ${newSurat.nomorSurat} berhasil ditambahkan.`, 'success');
+    }
+
+    saveData();
+    closeModal();
+    if (currentView === 'list') renderListView();
+  }
+
+  // Delete surat by id
+  function deleteSurat(id) {
+    suratData = suratData.filter(s => s.id !== id);
+    saveData();
+    if (currentView === 'list') renderListView();
+    showToast('Surat berhasil dihapus', 'success');
+  }
+
+  // Save data to localStorage
+  function saveData() {
+    localStorage.setItem(storageKey, JSON.stringify(suratData));
+  }
+
+  // Render categories view placeholder
+  function renderCategoriesView() {
+    main.innerHTML = `
+      <h2>Kategori Surat</h2>
+      <p>Fitur kategori akan hadir di pembaruan berikutnya.</p>
+    `;
+  }
+
+  // Render settings view
+  function renderSettingsView() {
+    main.innerHTML = `
+      <h2>Pengaturan</h2>
+      <div>
+        <label for="setting-theme-select">Tema Aplikasi:</label>
+        <select id="setting-theme-select" aria-label="Pilih tema aplikasi">
+          <option value="light" ${theme === 'light' ? 'selected' : ''}>Terang</option>
+          <option value="dark" ${theme === 'dark' ? 'selected' : ''}>Gelap</option>
+        </select>
+      </div>
+    `;
+
+    document.getElementById('setting-theme-select').addEventListener('change', (e) => {
+      setTheme(e.target.value);
+    });
+  }
+
+  // Toast notification helper
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.setAttribute('role', 'alert');
+    toast.tabIndex = 0;
+
+    const icon = document.createElement('span');
+    icon.className = 'toast-icon material-icons';
+    if (type === 'success') {
+      icon.textContent = 'check_circle';
+      toast.style.borderLeft = '4px solid #22c55e';
+    } else if (type === 'error') {
+      icon.textContent = 'error';
+      toast.style.borderLeft = '4px solid #ef4444';
+    } else {
+      icon.textContent = 'info';
+      toast.style.borderLeft = '4px solid #3b82f6';
+    }
+
+    const msg = document.createElement('div');
+    msg.textContent = message;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close-btn';
+    closeBtn.setAttribute('aria-label', 'Tutup notifikasi');
+    closeBtn.innerHTML = 'close';
+    closeBtn.addEventListener('click', () => {
+      toastContainer.removeChild(toast);
+    });
+
+    toast.append(icon, msg, closeBtn);
+    toastContainer.appendChild(toast);
+
+    // Focus on toast for accessibility
+    setTimeout(() => {
+      toast.focus();
+    }, 100);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentNode) toastContainer.removeChild(toast);
+    }, 5000);
+  }
+
+  // Sidebar navigation click handler
+  function onSidebarClick(event) {
+    const btn = event.currentTarget;
+    const view = btn.getAttribute('data-view');
+    renderView(view);
+  }
+
+  // Initialize the app on DOM ready
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+
